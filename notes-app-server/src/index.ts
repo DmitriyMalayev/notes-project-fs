@@ -11,10 +11,7 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
-interface UpdateNoteRequest {
-    title: string;
-    content: string;
-}
+
 app.get("/notes", async (req, res) => {
     const notes = await prisma.note.findMany();
     res.json(notes);
