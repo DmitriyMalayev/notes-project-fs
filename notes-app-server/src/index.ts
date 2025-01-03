@@ -11,7 +11,10 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
-
+interface UpdateNoteRequest {
+    title: string;
+    content: string;
+}
 app.get("/notes", async (req, res) => {
     const notes = await prisma.note.findMany();
     res.json(notes);
@@ -33,6 +36,7 @@ app.post("/api/notes", async (req, res) => {
         res.status(500).send("Oops, something went wrong");
     }
 });
+
 
 app.put("/api/notes/:id", async (req, res) => {
     const { title, content } = req.body;
