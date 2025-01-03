@@ -1,56 +1,42 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
-import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
+const prisma = new PrismaClient();
+
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
+app.get("/notes", async (req, res) => {
+    const notes = await prisma.note.findMany();
+    res.json(notes);
+});
+
+app.post("/api/notes", async (req, res) => {
+    const { title, content } = req.body;
+
+    if (!title || !content) {
+        return res.status(400).send("title and content fields required");
+    }
+
+    try {
+        const note = await prisma.note.create({
+            data: { title, content },
+        });
+        res.json(note);
+    } catch (error) {
+        res.status(500).send("Oops, something went wrong");
     }
 });
 
-async function initializeDatabase() {
-    const client = await pool.connect();
-    try {
-        await client.query(`
-      CREATE TABLE IF NOT EXISTS notes (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        content TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-        console.log("Database initialized");
-    } catch (err) {
-        console.error("Error initializing database", err);
-    } finally {
-        client.release();
-    }
-}
 
-app.get("/api/notes", async (req, res) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query('SELECT * FROM notes');
-        const notes = result.rows;
-        client.release();
-        res.json(notes);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Internal server error" });
-    }
-});
 
-initializeDatabase().then(() => {
-    app.listen(5000, () => {
-        console.log("server running on localhost:5000");
-    });
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
