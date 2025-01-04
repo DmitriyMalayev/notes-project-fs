@@ -1,75 +1,69 @@
-import React from 'react';
-import './App.css';
-import { useState } from 'react';
+import React, { useEffect } from 'react'
+import './App.css'
+import { useState } from 'react'
 
 interface Note {
-  id: number;
-  title: string;
-  content: string;
+  id: number
+  title: string
+  content: string
 }
 
-
-
-
-
 const App = () => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: 1,
-      title: "test note 1",
-      content: "bla bla note1",
-    },
-    {
-      id: 2,
-      title: "test note 2 ",
-      content: "bla bla note2",
-    },
-    {
-      id: 3,
-      title: "test note 3",
-      content: "bla bla note3",
-    },
-    {
-      id: 4,
-      title: "test note 4 ",
-      content: "bla bla note4",
-    },
-    {
-      id: 5,
-      title: "test note 5",
-      content: "bla bla note5",
-    },
-    {
-      id: 6,
-      title: "test note 6",
-      content: "bla bla note6",
-    },
-  ])
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null)
+  const [notes, setNotes] = useState<Note[]>([])
+
   const newNote: Note = {
     id: notes.length + 1,
     title: title,
-    content: content,
-  };
-  const handleAddNote = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedNote) {
-      return
+    content: content
+  }
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/notes')
+        const notes: Note[] = await response.json()
+        setNotes(notes)
+      } catch (error) {
+        console.error('Error fetching notes:', error)
+      }
     }
-    setNotes([newNote, ...notes]);
-    setTitle("");
-    setContent("");
+    fetchNotes()
+  }, [])
+
+  const handleAddNote = async (event: React.FormEvent) => {
+    event.preventDefault()
+    try {
+      const response = await fetch('http://localhost:5000/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title,
+          content
+        })
+      })
+
+      const newNote = await response.json()
+
+      setNotes([newNote, ...notes])
+      setTitle('')
+      setContent('')
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   const handleNoteClick = (note: Note) => {
-    setSelectedNote(note);
-    setTitle(note.title);
-    setContent(note.content);
+    setSelectedNote(note)
+    setTitle(note.title)
+    setContent(note.content)
   }
 
-  const handleUpdateNote = (e: React.FormEvent) => {
+  const handleUpdateNote = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedNote) {
       return
@@ -77,55 +71,105 @@ const App = () => {
     const updateNote: Note = {
       id: selectedNote.id,
       title: title,
-      content: content,
+      content: content
     }
 
-    const updatedNotesList = notes.map((note) => note.id === selectedNote.id ? updateNote : note)
+    try {
+      const response = await fetch(
+        `http://localhost:5000/notes/${selectedNote.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updateNote)
+        }
+      )
 
-    setNotes(updatedNotesList)
-    setTitle("")
-    setContent("")
-    setSelectedNote(null)
+      if (!response.ok) {
+        throw new Error('Failed to update note')
+      }
+
+      const updatedNote = await response.json()
+
+      const updatedNotesList = notes.map(note =>
+        note.id === selectedNote.id ? updatedNote : note
+      )
+
+      setNotes(updatedNotesList)
+      setTitle('')
+      setContent('')
+      setSelectedNote(null)
+    } catch (error) {
+      console.error('Error updating note:', error)
+    }
   }
 
   const handleCancel = () => {
-    setTitle("")
-    setContent("")
+    setTitle('')
+    setContent('')
     setSelectedNote(null)
   }
 
-  const handleDeleteNote = (e: React.MouseEvent, noteId: number) => {
-    e.stopPropagation()
-    setNotes(notes.filter((note) => note.id !== noteId))
+  const handleDeleteNote = async (event: React.MouseEvent, noteId: number) => {
+    event.stopPropagation()
+
+    try {
+      await fetch(`http://localhost:5000/notes/${noteId}`, {
+        method: 'DELETE'
+      })
+      const updatedNotes = notes.filter(note => note.id !== noteId)
+
+      setNotes(updatedNotes)
+    } catch (e) {
+      console.log(e)
+    }
   }
+
   return (
-    <div className="app-container">
-      <form className="note-form" onSubmit={(e) => selectedNote ? handleUpdateNote(e) : handleAddNote(e)}>
-        <input placeholder='title' required value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea placeholder='content' rows={10} required value={content} onChange={(e) => setContent(e.target.value)} />
+    <div className='app-container'>
+      <form
+        className='note-form'
+        onSubmit={e => (selectedNote ? handleUpdateNote(e) : handleAddNote(e))}
+      >
+        <input
+          placeholder='title'
+          required
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+        />
+        <textarea
+          placeholder='content'
+          rows={10}
+          required
+          value={content}
+          onChange={e => setContent(e.target.value)}
+        />
         {selectedNote ? (
-          <div className="edit-buttons">
-            <button type="submit">Save</button>
+          <div className='edit-buttons'>
+            <button type='submit'>Save</button>
             <button onClick={handleCancel}>Cancel</button>
           </div>
         ) : (
-          <button type="submit">Add Note</button>
+          <button type='submit'>Add Note</button>
         )}
       </form>
       <div className='notes-grid'>
-        {notes.map((note) => (
-          <div className='note-item' key={note.id} onClick={() => handleNoteClick(note)}>
+        {notes.map(note => (
+          <div
+            className='note-item'
+            key={note.id}
+            onClick={() => handleNoteClick(note)}
+          >
             <div className='notes-header'>
-              <button onClick={(e) => handleDeleteNote(e, note.id)}>x</button>
+              <button onClick={e => handleDeleteNote(e, note.id)}>x</button>
             </div>
             <h2>{note.title}</h2>
             <p>{note.content}</p>
           </div>
         ))}
       </div>
-
     </div>
-  );
+  )
 }
-
-export default App;
+export default App

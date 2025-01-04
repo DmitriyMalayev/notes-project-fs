@@ -17,7 +17,7 @@ app.get("/notes", async (req, res) => {
     res.json(notes);
 });
 
-app.post("/api/notes", async (req, res) => {
+app.post("/notes", async (req, res) => {
     const { title, content } = req.body;
 
     if (!title || !content) {
@@ -35,7 +35,7 @@ app.post("/api/notes", async (req, res) => {
 });
 
 
-app.put("/api/notes/:id", async (req, res) => {
+app.put("/notes/:id", async (req, res) => {
     const { title, content } = req.body;
     const id = parseInt(req.params.id);
 
@@ -60,7 +60,7 @@ app.put("/api/notes/:id", async (req, res) => {
     }
 });
 
-app.delete("/api/notes/:id", async (req, res) => {
+app.delete("/notes/:id", async (req, res) => {
     const id = parseInt(req.params.id);
 
     if (!id || isNaN(id)) {
@@ -80,7 +80,7 @@ app.delete("/api/notes/:id", async (req, res) => {
 
 
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
